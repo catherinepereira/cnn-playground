@@ -1,0 +1,158 @@
+import { useMemo, useState } from "react";
+import { KERNELS, convolve, maxPool2, relu, type Matrix } from "../lib/conv";
+import { generatedPattern } from "../lib/image";
+import { MatrixCanvas } from "../components/MatrixCanvas";
+import { ImagePicker } from "../components/ImagePicker";
+import { ColorLegend } from "../components/ColorLegend";
+import { InfoHint } from "../components/InfoHint";
+
+const IMG_SIZE = 64;
+
+interface LayerCfg {
+  kernels: (keyof typeof KERNELS)[];
+  relu: boolean;
+  pool: boolean;
+}
+
+const KERNEL_OPTIONS = Object.keys(KERNELS) as (keyof typeof KERNELS)[];
+
+export function MultiLayerMode() {
+  const [input, setInput] = useState<Matrix>(() => generatedPattern("circle", IMG_SIZE));
+  const [imageId, setImageId] = useState("circle");
+  const [layers, setLayers] = useState<LayerCfg[]>([
+    { kernels: ["sobel-x", "sobel-y", "edge"], relu: true, pool: true },
+    { kernels: ["edge", "sharpen"], relu: true, pool: true },
+    { kernels: ["blur"], relu: false, pool: false },
+  ]);
+
+  const stages = useMemo(() => {
+    const result: { label: string; maps: Matrix[] }[] = [{ label: "Input", maps: [input] }];
+    let prev: Matrix[] = [input];
+    layers.forEach((layer, idx) => {
+      const next: Matrix[] = [];
+      for (const k of layer.kernels) {
+        // Average across previous feature maps instead of learning a per-channel mix, since this is a visualizer with hand-picked kernels, not a trained network.
+        const acc = prev.map((m) => convolve(m, KERNELS[k], { stride: 1, padding: "same" }));
+        let combined = acc[0];
+        for (let i = 1; i < acc.length; i++) {
+          combined = combined.map((row, y) => row.map((v, x) => v + acc[i][y][x]));
+        }
+        if (acc.length > 1) {
+          combined = combined.map((row) => row.map((v) => v / acc.length));
+        }
+        let out = combined;
+        if (layer.relu) out = relu(out);
+        if (layer.pool) out = maxPool2(out);
+        next.push(out);
+      }
+      result.push({ label: `Layer ${idx + 1}`, maps: next });
+      prev = next;
+    });
+    return result;
+  }, [input, layers]);
+
+  function setLayerKernel(li: number, ki: number, name: keyof typeof KERNELS) {
+    setLayers((ls) => ls.map((l, i) => (i === li ? { ...l, kernels: l.kernels.map((k, j) => (j === ki ? name : k)) } : l)));
+  }
+  function addKernel(li: number) {
+    setLayers((ls) =>
+      ls.map((l, i) => (i === li && l.kernels.length < 4 ? { ...l, kernels: [...l.kernels, "edge"] } : l)),
+    );
+  }
+  function removeKernel(li: number) {
+    setLayers((ls) =>
+      ls.map((l, i) => (i === li && l.kernels.length > 1 ? { ...l, kernels: l.kernels.slice(0, -1) } : l)),
+    );
+  }
+  function toggle(li: number, field: "relu" | "pool") {
+    setLayers((ls) => ls.map((l, i) => (i === li ? { ...l, [field]: !l[field] } : l)));
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="text-sm text-gray-600">Image:</span>
+        <ImagePicker
+          size={IMG_SIZE}
+          value={imageId}
+          onChange={(m, label) => {
+            setInput(m);
+            setImageId(label.toLowerCase());
+          }}
+        />
+      </div>
+
+      <div className="space-y-4">
+        {layers.map((layer, li) => (
+          <div key={li} className="bg-white border border-gray-200 rounded-lg p-3 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Layer {li + 1}</span>
+            <div className="flex flex-wrap gap-2">
+              {layer.kernels.map((k, ki) => (
+                <select
+                  key={ki}
+                  value={k}
+                  onChange={(e) => setLayerKernel(li, ki, e.target.value as keyof typeof KERNELS)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                >
+                  {KERNEL_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              ))}
+            </div>
+            <button
+              onClick={() => addKernel(li)}
+              className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              + filter
+            </button>
+            <button
+              onClick={() => removeKernel(li)}
+              className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+            >
+              − filter
+            </button>
+            <label className="flex items-center gap-1 text-sm">
+              <input type="checkbox" checked={layer.relu} onChange={() => toggle(li, "relu")} />
+              ReLU
+            </label>
+            <InfoHint text="ReLU (Rectified Linear Unit) clamps negative values to zero and leaves positives unchanged: f(x) = max(0, x). It introduces nonlinearity so the network can model more than just linear filters." />
+            <label className="flex items-center gap-1 text-sm">
+              <input type="checkbox" checked={layer.pool} onChange={() => toggle(li, "pool")} />
+              MaxPool 2×2
+            </label>
+            <InfoHint text="Max pooling slides a 2×2 window across the feature map and keeps only the largest value in each window. It halves the spatial size and makes the response slightly translation-invariant, so small shifts in the input don't change the output." />
+          </div>
+        ))}
+      </div>
+
+      <ColorLegend />
+
+      <div className="overflow-x-auto">
+        <div className="flex gap-6 items-start min-w-fit pb-4">
+          {stages.map((stage, si) => (
+            <div key={si} className="flex flex-col items-center gap-2">
+              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{stage.label}</h4>
+              <div className="flex flex-col gap-2">
+                {stage.maps.map((m, mi) => (
+                  <div key={mi} className="flex flex-col items-center">
+                    <MatrixCanvas
+                      matrix={m}
+                      cellSize={Math.max(2, Math.floor(96 / m.length))}
+                      colormap={si === 0 ? "gray" : "diverging"}
+                    />
+                    <span className="text-[10px] text-gray-500 font-mono">
+                      {m[0]?.length ?? 0}×{m.length}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
