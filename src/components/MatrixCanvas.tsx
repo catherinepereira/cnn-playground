@@ -1,6 +1,24 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { Matrix } from "../lib/conv";
 import { normalize } from "../lib/conv";
+
+function subscribeToTheme(callback: () => void): () => void {
+  const observer = new MutationObserver(callback);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  return () => observer.disconnect();
+}
+
+function isDarkSnapshot(): boolean {
+  return document.documentElement.classList.contains("dark");
+}
+
+function useIsDark(): boolean {
+  return useSyncExternalStore(
+    subscribeToTheme,
+    isDarkSnapshot,
+    () => false,
+  );
+}
 
 interface Props {
   matrix: Matrix;
@@ -38,6 +56,7 @@ export function MatrixCanvas({
   colormap = "gray",
 }: Props) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const isDark = useIsDark();
 
   useEffect(() => {
     const canvas = ref.current;
@@ -74,7 +93,7 @@ export function MatrixCanvas({
       }
     }
     if (showGrid && cellSize >= 8) {
-      ctx.strokeStyle = "rgba(0,0,0,0.15)";
+      ctx.strokeStyle = isDark ? "rgba(255,255,255,0.12)" : "rgba(0,0,0,0.15)";
       ctx.lineWidth = 1;
       for (let y = 0; y <= h; y++) {
         ctx.beginPath();
@@ -99,7 +118,7 @@ export function MatrixCanvas({
         highlight.h * cellSize,
       );
     }
-  }, [matrix, cellSize, highlight, showGrid, colormap]);
+  }, [matrix, cellSize, highlight, showGrid, colormap, isDark]);
 
   function handleMove(e: React.MouseEvent<HTMLCanvasElement>) {
     if (!onCellHover) return;
@@ -115,7 +134,7 @@ export function MatrixCanvas({
       onMouseMove={handleMove}
       onMouseLeave={onCellLeave}
       style={{ imageRendering: "pixelated" }}
-      className="border border-gray-300 rounded"
+      className="border border-gray-300 dark:border-zinc-700 rounded"
     />
   );
 }

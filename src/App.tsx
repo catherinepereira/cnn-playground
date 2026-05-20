@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SingleConvMode } from "./modes/SingleConvMode";
 import { PlaygroundMode } from "./modes/PlaygroundMode";
 import { MultiLayerMode } from "./modes/MultiLayerMode";
+import { SiteHeader } from "./components/SiteHeader";
 
 type Tab = "single" | "playground" | "multi";
 
@@ -16,25 +17,34 @@ export default function App() {
   const active = TABS.find((t) => t.id === tab)!;
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-zinc-900 dark:text-zinc-100">
       <div className="max-w-7xl mx-auto px-6 py-8">
-        <header className="mb-6 flex items-center justify-between">
-          <h1 className="text-3xl font-bold tracking-tight">CNN Playground</h1>
-        </header>
+        <SiteHeader title="CNN Playground" repo="cnn-playground">
+          A{" "}
+          <a
+            href="https://en.wikipedia.org/wiki/Convolutional_neural_network"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-gray-700 dark:text-zinc-300 hover:text-gray-900 dark:hover:text-zinc-100"
+          >
+            convolution
+          </a>{" "}
+          slides a small kernel of weights across an image, multiplies elementwise,
+          and sums to produce one output pixel. Stack convolutions with ReLU and
+          pooling, and you have a CNN. Pick a preset kernel or hand-edit one to see
+          how it shapes the output, then move up to multi-layer mode to watch
+          feature maps build on each other.
+        </SiteHeader>
 
-        <p className="text-sm text-gray-600 mb-5">
-          An interactive look at what convolutions do.
-        </p>
-
-        <div className="mb-6 flex items-center bg-gray-100 rounded-lg p-0.5 text-sm w-fit">
+        <div className="mb-6 flex items-center bg-gray-100 dark:bg-zinc-800 rounded-lg p-0.5 text-sm w-fit">
           {TABS.map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
               className={`px-4 py-1.5 rounded-md transition-colors cursor-pointer ${
                 tab === t.id
-                  ? "bg-white text-gray-900 shadow-sm font-medium"
-                  : "text-gray-500 hover:text-gray-700"
+                  ? "bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 shadow-sm font-medium"
+                  : "text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200"
               }`}
             >
               {t.label}
@@ -42,15 +52,12 @@ export default function App() {
           ))}
         </div>
 
-        <p className="text-sm text-gray-500 mb-5">{active.blurb}</p>
+        <p className="text-sm text-gray-500 dark:text-zinc-400 mb-5">{active.blurb}</p>
 
         {tab === "single" && <SingleConvMode />}
         {tab === "playground" && <PlaygroundMode />}
         {tab === "multi" && <MultiLayerMode />}
 
-        <footer className="mt-12 pb-4 text-xs text-gray-400">
-          part of a CV learning arc. all math runs in your browser.
-        </footer>
       </div>
     </div>
   );

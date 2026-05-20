@@ -30,8 +30,8 @@ export function KernelEditor({ kernel, onChange, editable = true, highlight = nu
               disabled={!editable}
               onChange={(e) => setCell(y, x, parseFloat(e.target.value) || 0)}
               className={`w-16 h-12 px-1 text-center border rounded text-sm font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${
-                isHi ? "border-red-500 bg-red-50" : "border-gray-300 bg-white"
-              } ${editable ? "" : "text-gray-600"}`}
+                isHi ? "border-red-500 bg-red-50 dark:bg-red-950/30" : "border-gray-300 dark:border-zinc-700 bg-white dark:bg-zinc-900"
+              } ${editable ? "" : "text-gray-600 dark:text-zinc-400"}`}
             />
           );
         }),

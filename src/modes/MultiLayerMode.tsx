@@ -71,28 +71,28 @@ export function MultiLayerMode() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <span className="text-sm text-gray-600">Image:</span>
+        <span className="text-sm text-gray-600 dark:text-zinc-400">Image:</span>
         <ImagePicker
           size={IMG_SIZE}
           value={imageId}
-          onChange={(m, label) => {
+          onChange={(m, id) => {
             setInput(m);
-            setImageId(label.toLowerCase());
+            setImageId(id);
           }}
         />
       </div>
 
       <div className="space-y-4">
         {layers.map((layer, li) => (
-          <div key={li} className="bg-white border border-gray-200 rounded-lg p-3 flex flex-wrap items-center gap-3">
-            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Layer {li + 1}</span>
+          <div key={li} className="bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-lg p-3 flex flex-wrap items-center gap-3">
+            <span className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide">Layer {li + 1}</span>
             <div className="flex flex-wrap gap-2">
               {layer.kernels.map((k, ki) => (
                 <select
                   key={ki}
                   value={k}
                   onChange={(e) => setLayerKernel(li, ki, e.target.value as keyof typeof KERNELS)}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  className="border border-gray-300 dark:border-zinc-700 rounded px-2 py-1 text-sm"
                 >
                   {KERNEL_OPTIONS.map((opt) => (
                     <option key={opt} value={opt}>
@@ -104,13 +104,13 @@ export function MultiLayerMode() {
             </div>
             <button
               onClick={() => addKernel(li)}
-              className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-2 py-1 text-xs rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
             >
               + filter
             </button>
             <button
               onClick={() => removeKernel(li)}
-              className="px-2 py-1 text-xs rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+              className="px-2 py-1 text-xs rounded-md border border-gray-300 dark:border-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800/40 transition-colors cursor-pointer"
             >
               − filter
             </button>
@@ -134,7 +134,7 @@ export function MultiLayerMode() {
         <div className="flex gap-6 items-start min-w-fit pb-4">
           {stages.map((stage, si) => (
             <div key={si} className="flex flex-col items-center gap-2">
-              <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{stage.label}</h4>
+              <h4 className="text-xs font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide">{stage.label}</h4>
               <div className="flex flex-col gap-2">
                 {stage.maps.map((m, mi) => (
                   <div key={mi} className="flex flex-col items-center">
@@ -143,7 +143,7 @@ export function MultiLayerMode() {
                       cellSize={Math.max(2, Math.floor(96 / m.length))}
                       colormap={si === 0 ? "gray" : "diverging"}
                     />
-                    <span className="text-[10px] text-gray-500 font-mono">
+                    <span className="text-[10px] text-gray-500 dark:text-zinc-500 font-mono">
                       {m[0]?.length ?? 0}×{m.length}
                     </span>
                   </div>
